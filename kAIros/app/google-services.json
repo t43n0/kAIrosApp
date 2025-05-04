@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "913949515497",
+    "project_id": "diariogpt-95b2b",
+    "storage_bucket": "diariogpt-95b2b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:913949515497:android:1254aa64ce78ca8576da78",
+        "android_client_info": {
+          "package_name": "com.dam.kairos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyN525dlDqYAxeeL0il1HHUmq9cFEDBvY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
