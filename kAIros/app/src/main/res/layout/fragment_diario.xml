@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.fragments.DiarioFragment">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:paddingBottom="40dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <EditText
+                android:id="@+id/editTextEntry"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:hint="@string/escribe_tu_entrada_diaria_aqui"
+                android:inputType="textMultiLine"
+                android:maxLength="500"
+                android:minHeight="200dp" />
+
+            <ImageView
+                android:id="@+id/pbAnalisis"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:contentDescription="@string/cargando"
+                android:visibility="gone" />
+
+<!--            <ProgressBar-->
+<!--                android:id="@+id/pbAnalisis"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:layout_marginTop="16dp"-->
+<!--                android:visibility="gone" />-->
+
+            <!-- Switch para marcar si la entrada es pública o privada -->
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchPublic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_gravity="center"
+                android:text="@string/publicar" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchImage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_gravity="center"
+                android:text="@string/generar_imagen" />
+
+            <Spinner
+                android:id="@+id/spnStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:layout_gravity="center"
+                android:spinnerMode="dropdown"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/buttonSave"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/guardar_entrada" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewEntries"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="16dp" />
+
+            <Button
+                android:id="@+id/buttonAnalyze"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/analizar_semana" />
+
+            <Button
+                android:id="@+id/buttonDeleteLastEntry"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/borrar_ultima_entrada" />
+
+            <Button
+                android:id="@+id/buttonDeleteEntriesFromLastWeek"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/borrar_ultima_semana" />
+
+            <Button
+                android:id="@+id/buttonDeleteAll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/borrar_todo" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</FrameLayout>

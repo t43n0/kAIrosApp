@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_diario"
+        android:icon="@drawable/menu_diary"
+        android:title="Diario" />
+    <item
+        android:id="@+id/menu_calendario"
+        android:icon="@drawable/menu_calendar"
+        android:title="Calendario" />
+    <item
+        android:id="@+id/menu_feed"
+        android:icon="@drawable/menu_feed"
+        android:title="Feed" />
+    <item
+        android:id="@+id/menu_analisis"
+        android:icon="@drawable/menu_analysis"
+        android:title="Analisis" />
+    <item
+        android:id="@+id/menu_perfil"
+        android:icon="@drawable/menu_user"
+        android:title="Perfil" />
+</menu>
