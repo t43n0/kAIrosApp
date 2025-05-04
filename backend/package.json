@@ -1,0 +1,29 @@
+{
+  "name": "backend-genkit",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "genkit dev",
+    "start": "node test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@genkit-ai/googleai": "^1.6.0",
+    "@genkit-ai/vertexai": "^1.6.0",
+    "cors": "^2.8.5",
+    "data-urls": "^5.0.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "firebase": "^11.6.0",
+    "firebase-admin": "^13.2.0",
+    "genkit": "^1.6.0",
+    "node-fetch": "^3.3.2",
+    "openai": "^4.93.0",
+    "uuid": "^11.1.0"
+  }
+}
