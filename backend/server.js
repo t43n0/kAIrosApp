@@ -10,7 +10,7 @@ const options = {
   cert: fs.readFileSync('cert.pem'),
 };
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 
 https.createServer(options, app).listen(PORT, () => {
   console.log(`✅ Servidor HTTPS activo en https://localhost:${PORT}`);

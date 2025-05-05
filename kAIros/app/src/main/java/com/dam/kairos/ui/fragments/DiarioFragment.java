@@ -6,6 +6,7 @@ import static android.view.View.VISIBLE;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,6 +27,12 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.dam.kairos.ui.adapters.EntryDiarioAdapter;
 import com.dam.kairos.utils.ImageStylePrompt;
@@ -40,6 +47,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -94,6 +102,7 @@ public class DiarioFragment extends Fragment {
     private final String modelPro = "gpt-4o";
     private static final String longPromp = "Eres un asistente que genera resúmenes semanales y recomendaciones basadas en entradas diarias de un diario. Ofrece un objetivo semanal acorde a lo anotado y ejemplos prácticos para lograrlo. Al final del análisis, para cada día selecciona una de estas 6 emociones precedidas de la fecha actual en formato dd-MM-yyyy (en inglés) según la emoción predominante e imprime cada línea iniciada con \"::\" (ej: \"::25-03-2025 ; emotion_happy;\"): emotion_happy, emotion_sad, emotion_angry, emotion_afraid, emotion_surprised, emotion_upset.";
     private static final String shortPromp = "Genera un resumen semanal y una recomendación basada en las entradas del diario. Propón un objetivo semanal con ejemplos prácticos. Al final, para cada entrada, indica la emoción predominante precedida por la fecha en formato dd-MM-yyyy (en inglés), usando este formato: ::25-03-2025 ; emotion_happy;. Emociones: emotion_happy, emotion_sad, emotion_angry, emotion_afraid, emotion_surprised, emotion_upset.";
+    private static String visualPrompt = "Ilustración basada en este análisis emocional semanal: ";
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Nullable
@@ -257,13 +266,13 @@ public class DiarioFragment extends Fragment {
                     @Override
                     public void onSuccess(String analysisText) {
                         saveAnalysisToFirestore(analysisText);
-                        updateUiAfterAnalysis();
+                        hidePb();
                     }
 
                     @Override
                     public void onError(String errorMessage) {
                         Toast.makeText(getContext(), errorMessage, Toast.LENGTH_LONG).show();
-                        updateUiAfterAnalysis();
+                        hidePb();
                     }
                 });
             }
@@ -291,8 +300,8 @@ public class DiarioFragment extends Fragment {
                 // Realizar la consulta para obtener las entradas de la semana pasada
                 db.collection("entries")
                         .whereEqualTo("userId", currentUserId)  // Filtrar por el ID del usuario
-                        .whereGreaterThanOrEqualTo("date", startOfLastWeek)  // Fecha mayor o igual al inicio de la última semana
-                        .whereLessThanOrEqualTo("date", endOfLastWeek)  // Fecha menor o igual al final de la última semana
+                        .whereGreaterThanOrEqualTo("timestamp", startOfLastWeek)  // Fecha mayor o igual al inicio de la última semana
+                        .whereLessThanOrEqualTo("timestamp", endOfLastWeek)  // Fecha menor o igual al final de la última semana
                         .get()
                         .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                             @Override
@@ -310,6 +319,7 @@ public class DiarioFragment extends Fragment {
                                                         requireActivity().runOnUiThread(new Runnable() {
                                                             @Override
                                                             public void run() {
+                                                                deleteImageFromBackend((String) document.get("imageUrl"));
                                                                 loadEntries(); // Recargar entradas
                                                                 Toast.makeText(getContext(), "Entradas de la última semana eliminadas", Toast.LENGTH_SHORT).show();
                                                             }
@@ -365,6 +375,7 @@ public class DiarioFragment extends Fragment {
                                                         requireActivity().runOnUiThread(new Runnable() {
                                                             @Override
                                                             public void run() {
+                                                                deleteImageFromBackend((String) document.get("imageUrl"));
                                                                 loadEntries(); // Recargar entradas
                                                                 Toast.makeText(getContext(), "Todas las entradas eliminadas", Toast.LENGTH_SHORT).show();
                                                             }
@@ -419,7 +430,8 @@ public class DiarioFragment extends Fragment {
                                                     requireActivity().runOnUiThread(new Runnable() {
                                                         @Override
                                                         public void run() {
-                                                            loadEntries(); // Recargar entradas
+                                                            loadEntries();
+                                                            deleteImageFromBackend((String) lastEntryDocument.get("imageUrl"));
                                                             Toast.makeText(getContext(), "Última entrada eliminada", Toast.LENGTH_SHORT).show();
                                                         }
                                                     });
@@ -450,41 +462,86 @@ public class DiarioFragment extends Fragment {
         });
     }
 
+    private void deleteImageFromBackend(String imageUrl) {
+        try {
+            Uri uri = Uri.parse(imageUrl);
+            String path = uri.getPath();
+            if (path != null && path.startsWith("/")) {
+                path = path.substring(1); // quitar el primer "/"
+            }
+
+            JSONObject jsonBody = new JSONObject();
+            jsonBody.put("path", path);
+
+            String backendUrl = "https://10.0.2.2:3001/delete-image"; // o tu dominio público si no estás en emulador
+
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    backendUrl,
+                    jsonBody,
+                    new Response.Listener<JSONObject>() {
+                        @Override
+                        public void onResponse(JSONObject response) {
+                            Log.d("DeleteImage", "Imagen eliminada del backend correctamente");
+                        }
+                    },
+                    new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            Log.e("DeleteImage", "Error al eliminar imagen en el backend", error);
+                        }
+                    }
+            );
+
+            RequestQueue queue = Volley.newRequestQueue(requireContext());
+            queue.add(request);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 
     private void loadEntries() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         db.collection("entries")
                 .whereEqualTo("userId", currentUserId)
-                .orderBy("timestamp", Query.Direction.DESCENDING) // más recientes primero
+                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<EntryDiario> entries = new ArrayList<>();
-                    EntryDiario entry = null;
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        String id = doc.getId(); // id del documento
-                        String userId = doc.getString("userId");
-                        String content = doc.getString("content");
-                        String imageUrl = doc.getString("imageUrl") != null ? doc.getString("imageUrl") : "";
-                        Date date = doc.getDate("date");
-                        String formattedDate = doc.getString("formattedDate");
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                        List<EntryDiario> entries = new ArrayList<>();
+                        EntryDiario entry = null;
 
-                        entry = new EntryDiario(id, userId, content, imageUrl, date, formattedDate);
-                        entries.add(entry);
-                        Log.e(TAG, "Entrada " + id + ": " + content + ";" + imageUrl + ";" + date);
+                        for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                            String id = doc.getId(); // id del documento
+                            String userId = doc.getString("userId");
+                            String content = doc.getString("content");
+                            String imageUrl = doc.getString("imageUrl") != null ? doc.getString("imageUrl") : "";
+                            Timestamp timestamp = doc.getTimestamp("timestamp");
+                            assert timestamp != null;
+                            String formattedDate = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(timestamp.toDate());
+                            entry = new EntryDiario(id, userId, content, imageUrl, timestamp, formattedDate);
+                            entries.add(entry);
+                            Log.e(TAG, "Entrada " + id + ": " + content + ";" + imageUrl + ";" + formattedDate);
+                        }
+
+                        entryAdapter.setEntries(entries);
+                        entryAdapter.notifyDataSetChanged();
                     }
-                    entryAdapter.setEntries(entries);
-                    entryAdapter.notifyDataSetChanged();
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         Log.e(TAG, "Error al cargar entradas", e);
                         Toast.makeText(getContext(), "Error al cargar entradas", Toast.LENGTH_SHORT).show();
-
                     }
                 });
     }
+
 
 
     private void saveEntry() {
@@ -506,16 +563,16 @@ public class DiarioFragment extends Fragment {
         // Preparamos los datos a guardar
         Map<String, Object> entryData = new HashMap<>();
 
-        Date now = new Date();
-        String currentDateFormatted = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(now);
+        Timestamp now = new Timestamp(new Date());
+
+        String formattedDate = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(now);
 
         entryData.put("userId", currentUserId);
         entryData.put("content", content);
-        entryData.put("date", now); // Este es el cambio clave (guarda como Date real)
-        entryData.put("formattedDate", currentDateFormatted); // Por si aún necesitas mostrarla en formato texto
         entryData.put("isPublic", isPublic);
         entryData.put("needsImage", needsImage);
-        entryData.put("timestamp", new Date());
+        entryData.put("formattedDate", formattedDate);
+        entryData.put("timestamp", new Timestamp(now.toDate()));
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("entries")
@@ -525,21 +582,7 @@ public class DiarioFragment extends Fragment {
                     @Override
                     public void onSuccess(Void aVoid) {
                         Toast.makeText(getContext(), "Entrada guardada", Toast.LENGTH_SHORT).show();
-                        pbAnalisis.setVisibility(VISIBLE);
-                        Glide.with(requireContext())
-                                .asGif()
-                                .load(R.drawable.loading_gif)
-                                .into(pbAnalisis);
-                        swtImage.setVisibility(GONE);
-                        swtPublic.setVisibility(GONE);
-                        spnStyle.setVisibility(GONE);
-                        editTextEntry.setVisibility(GONE);
-                        buttonClearEntriesFromLastWeek.setVisibility(GONE);
-                        buttonSave.setVisibility(GONE);
-                        buttonAnalyze.setVisibility(GONE);
-                        buttonClearAll.setVisibility(GONE);
-                        buttonClearLastEntry.setVisibility(GONE);
-                        recyclerViewEntries.setVisibility(GONE);
+                        showPb();
                         // Si hay que generar imagen, lanzamos la petición al backend
                         if (needsImage) {
                             ImageStylePrompt style = (ImageStylePrompt) spnStyle.getSelectedItem();
@@ -554,21 +597,29 @@ public class DiarioFragment extends Fragment {
                     public void onFailure(@NonNull Exception e) {
                         Toast.makeText(getContext(), "Error al guardar entrada", Toast.LENGTH_SHORT).show();
                         Log.e(TAG, "Error al guardar entrada", e);
-                        pbAnalisis.setVisibility(GONE);
-                        swtImage.setVisibility(VISIBLE);
-                        swtPublic.setVisibility(VISIBLE);
-                        spnStyle.setVisibility(VISIBLE);
-                        editTextEntry.setVisibility(VISIBLE);
-                        buttonClearEntriesFromLastWeek.setVisibility(VISIBLE);
-                        buttonSave.setVisibility(VISIBLE);
-                        buttonAnalyze.setVisibility(VISIBLE);
-                        buttonClearAll.setVisibility(VISIBLE);
-                        buttonClearLastEntry.setVisibility(VISIBLE);
-                        recyclerViewEntries.setVisibility(VISIBLE);
+                        hidePb();
                     }
                 });
 
         editTextEntry.setText("");
+    }
+
+    private void showPb() {
+        pbAnalisis.setVisibility(VISIBLE);
+        Glide.with(requireContext())
+                .asGif()
+                .load(R.drawable.loading_gif)
+                .into(pbAnalisis);
+        swtImage.setVisibility(GONE);
+        swtPublic.setVisibility(GONE);
+        spnStyle.setVisibility(GONE);
+        editTextEntry.setVisibility(GONE);
+        buttonClearEntriesFromLastWeek.setVisibility(GONE);
+        buttonSave.setVisibility(GONE);
+        buttonAnalyze.setVisibility(GONE);
+        buttonClearAll.setVisibility(GONE);
+        buttonClearLastEntry.setVisibility(GONE);
+        recyclerViewEntries.setVisibility(GONE);
     }
 
     /**
@@ -712,7 +763,7 @@ public class DiarioFragment extends Fragment {
         return conn;
     }
 
-    private void updateUiAfterAnalysis() {
+    private void hidePb() {
         requireActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -735,13 +786,9 @@ public class DiarioFragment extends Fragment {
     private void saveAnalysisToFirestore(String analysis) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Obtener la fecha actual como String
-        String formattedDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
-
         // Crear un objeto con los datos
         Map<String, Object> analysisData = new HashMap<>();
         analysisData.put("userId", currentUserId);
-        analysisData.put("date", formattedDate); // ✅ Fecha como String
         analysisData.put("analysis", analysis);
 
         // Guardar en Firestore en la colección "analyses"
@@ -775,7 +822,7 @@ public class DiarioFragment extends Fragment {
         StringBuilder userContent = new StringBuilder("Aquí están mis entradas de la última semana:\n");
 
         for (EntryDiario entry : lastWeekEntries) {
-            userContent.append(entry.getDate()).append(": ").append(entry.getText()).append("\n");
+            userContent.append(entry.getTimestamp()).append(": ").append(entry.getText()).append("\n");
         }
 
         messages.add(new Message("user", userContent.toString().trim()));

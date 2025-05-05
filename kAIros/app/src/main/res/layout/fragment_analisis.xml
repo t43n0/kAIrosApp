@@ -17,6 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/analisis_semanal"
+            android:layout_marginTop="80dp"
             android:textAlignment="center"
             android:textSize="32sp"
             android:paddingBottom="16dp"/>
@@ -25,8 +26,11 @@
             android:id="@+id/tvAnalisis"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/black"
-            android:textAlignment="viewStart" />
+            android:layout_marginBottom="80dp"
+            android:lineSpacingExtra="8dp"
+            android:padding="16dp"
+            android:textSize="18sp"
+            android:textColor="@color/black" />
 
     </LinearLayout>
 
