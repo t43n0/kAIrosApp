@@ -3,21 +3,21 @@
     <item
         android:id="@+id/menu_diario"
         android:icon="@drawable/menu_diary"
-        android:title="Diario" />
+        android:title="@string/diario" />
     <item
         android:id="@+id/menu_calendario"
         android:icon="@drawable/menu_calendar"
-        android:title="Calendario" />
-    <item
+        android:title="@string/calendario" />
+    <!-- <item
         android:id="@+id/menu_feed"
         android:icon="@drawable/menu_feed"
-        android:title="Feed" />
+        android:title="Feed" /> TODO-->
     <item
         android:id="@+id/menu_analisis"
         android:icon="@drawable/menu_analysis"
-        android:title="Analisis" />
-    <item
+        android:title="@string/analisis" />
+    <!--<item
         android:id="@+id/menu_perfil"
         android:icon="@drawable/menu_user"
-        android:title="Perfil" />
+        android:title="Perfil" /> TODO-->
 </menu>

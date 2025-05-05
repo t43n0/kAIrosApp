@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.dam.kairos"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.dam.kairos"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -39,10 +39,11 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.recyclerview)
     implementation(libs.room.runtime)
+    implementation(libs.volley)
     implementation(libs.firebase.firestore)
     annotationProcessor(libs.room.compiler)
-    implementation (libs.retrofit)
-    implementation (libs.converter.gson)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.material.calendarview)

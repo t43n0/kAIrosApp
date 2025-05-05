@@ -10,12 +10,12 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.dam.kairos.ui.fragments.PerfilFragment;
+//import com.dam.kairos.ui.fragments.PerfilFragment;
 import com.dam.kairos.R;
 import com.dam.kairos.ui.fragments.AnalisisFragment;
 import com.dam.kairos.ui.fragments.CalendarioFragment;
 import com.dam.kairos.ui.fragments.DiarioFragment;
-import com.dam.kairos.ui.fragments.FeedFragment;
+//import com.dam.kairos.ui.fragments.FeedFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
@@ -54,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Error: El adaptador no tiene suficientes elementos");
         }
 
-        // Listener del BottomNavigationView para cambiar la página del ViewPager2
         bottomNavigationView.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -66,15 +65,15 @@ public class MainActivity extends AppCompatActivity {
                 } else if (itemId == R.id.menu_calendario) {
                     viewPager.setCurrentItem(1, false);
                     return true;
-                } else if (itemId == R.id.menu_feed) {
-                    viewPager.setCurrentItem(2, false);
-                    return true;
+                //} else if (itemId == R.id.menu_feed) {
+                    //viewPager.setCurrentItem(2, false);
+                    //return true;
                 } else if (itemId == R.id.menu_analisis) {
-                    viewPager.setCurrentItem(3, false);
+                    viewPager.setCurrentItem(2, false); //cambiar a 3 en el futuro TODO
                     return true;
-                } else if (itemId == R.id.menu_perfil) {
-                    viewPager.setCurrentItem(4, false);
-                    return true;
+                //} else if (itemId == R.id.menu_perfil) {
+                    //viewPager.setCurrentItem(4, false);
+                    //return true;
                 } else {
                     Log.e(TAG, "Error: ID de menú desconocido");
                     return false;
@@ -96,14 +95,14 @@ public class MainActivity extends AppCompatActivity {
                         bottomNavigationView.setSelectedItemId(R.id.menu_calendario);
                         break;
                     case 2:
-                        bottomNavigationView.setSelectedItemId(R.id.menu_feed);
-                        break;
-                    case 3:
+                        // bottomNavigationView.setSelectedItemId(R.id.menu_feed);
+                        // break;
+                    //case 3:
                         bottomNavigationView.setSelectedItemId(R.id.menu_analisis);
                         break;
-                    case 4:
-                        bottomNavigationView.setSelectedItemId(R.id.menu_perfil);
-                        break;
+                    //case 4:
+                        //bottomNavigationView.setSelectedItemId(R.id.menu_perfil);
+                        //break;
                     default:
                         Log.e(TAG, "Error: Posición desconocida en ViewPager2");
                 }
@@ -128,11 +127,11 @@ public class MainActivity extends AppCompatActivity {
                 case 1:
                     return new CalendarioFragment();
                 case 2:
-                    return new FeedFragment();
-                case 3:
+                    //return new FeedFragment();
+                //case 3:
                     return new AnalisisFragment();
-                case 4:
-                    return new PerfilFragment();
+                //case 4:
+                    //return new PerfilFragment();
                 default:
                     Log.e(TAG, "Error: Posición inválida en createFragment: " + position);
                     throw new IllegalArgumentException("Posición inválida: " + position);
@@ -141,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public int getItemCount() {
-            return 5;
+            return 3; //en el futuro deberan de ser 5 TODO
         }
     }
 }

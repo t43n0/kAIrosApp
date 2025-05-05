@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fillViewport="true"
     tools:context=".ui.fragments.DiarioFragment">
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true"
-        android:paddingBottom="40dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -21,6 +16,8 @@
                 android:id="@+id/editTextEntry"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="80dp"
+                android:autofillHints=""
                 android:gravity="top"
                 android:hint="@string/escribe_tu_entrada_diaria_aqui"
                 android:inputType="textMultiLine"
@@ -31,8 +28,8 @@
                 android:id="@+id/pbAnalisis"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
+                android:layout_marginTop="80dp"
                 android:layout_gravity="center"
-                android:layout_marginTop="16dp"
                 android:contentDescription="@string/cargando"
                 android:visibility="gone" />
 
@@ -105,10 +102,9 @@
                 android:id="@+id/buttonDeleteAll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/borrar_todo" />
+                android:text="@string/borrar_todo"
+                android:layout_marginBottom="80dp"/>
 
         </LinearLayout>
 
-    </ScrollView>
-
-</FrameLayout>
+</ScrollView>

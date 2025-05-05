@@ -63,8 +63,8 @@ public class WeeklyAnalyzer {
 
         db.collection("entries")
                 .whereEqualTo("userId", userId)
-                .whereGreaterThanOrEqualTo("date", startOfWeek)
-                .whereLessThanOrEqualTo("date", endOfWeek)
+                .whereGreaterThanOrEqualTo("timestamp", startOfWeek)
+                .whereLessThanOrEqualTo("timestamp", endOfWeek)
                 .get()
                 .addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener<com.google.firebase.firestore.QuerySnapshot>() {
                     @Override
@@ -73,7 +73,7 @@ public class WeeklyAnalyzer {
                             List<Message> messages = new ArrayList<>();
 
 // Mensaje de sistema inicial opcional (recomendado)
-                            messages.add(new Message("assistant", prePrompt));
+                            messages.add(new Message("system", prePrompt));
 
 // Añadir las entradas del usuario como mensajes
                             for (QueryDocumentSnapshot doc : task.getResult()) {

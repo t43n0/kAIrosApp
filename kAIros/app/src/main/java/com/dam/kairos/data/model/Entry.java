@@ -22,9 +22,7 @@ public class Entry {
         this.likeCount = likeCount;
     }
 
-
     // Getters y setters
-
 
     public boolean isImagen() {
         return imagen;
