@@ -1,5 +1,7 @@
 package com.dam.kairos.data.model;
 
+import com.google.firebase.Timestamp;
+
 import java.util.Date;
 
 public class EntryDiario {
@@ -7,17 +9,17 @@ public class EntryDiario {
     private String idUser;
     private String text;
     private String imageUrl;
-    private Date date;
+    private Timestamp timestamp;
     private String formattedDate;
 
     public EntryDiario() {}
 
-    public EntryDiario(String id, String idUser, String text, String imageUrl, Date date, String formattedDate) {
+    public EntryDiario(String id, String idUser, String text, String imageUrl, Timestamp timestamp, String formattedDate) {
         this.id = id;
         this.idUser = idUser;
         this.text = text;
         this.imageUrl = imageUrl;
-        this.date = date;
+        this.timestamp = timestamp;
         this.formattedDate = formattedDate;
     }
 
@@ -37,8 +39,8 @@ public class EntryDiario {
         return imageUrl;
     }
 
-    public Date getDate() {
-        return date;
+    public Timestamp getTimestamp() {
+        return timestamp;
     }
 
     public String getFormattedDate() {
@@ -61,8 +63,8 @@ public class EntryDiario {
         this.imageUrl = imageUrl;
     }
 
-    public void setDate(Date date) {
-        this.date = date;
+    public void setTimestamp(Timestamp timestamp) {
+        this.timestamp = timestamp;
     }
 
     public void setFormattedDate(String formattedDate) {

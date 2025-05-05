@@ -36,4 +36,7 @@
     <string name="cargando">Cargando</string>
     <string name="foto_de_perfil">Foto de perfil</string>
     <string name="perfil">Perfil</string>
+    <string name="diario">Diario</string>
+    <string name="calendario">Calendario</string>
+    <string name="analisis">Analisis</string>
 </resources>

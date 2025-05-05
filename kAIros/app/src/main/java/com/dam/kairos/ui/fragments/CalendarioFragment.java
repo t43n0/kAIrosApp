@@ -24,6 +24,8 @@ import com.prolificinteractive.materialcalendarview.DayViewFacade;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.format.DateTimeFormatter;
+
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -98,11 +100,7 @@ public class CalendarioFragment extends Fragment {
             try {
                 // 🔁 Usamos ThreeTenBP en lugar de java.time
                 LocalDate localDate = LocalDate.parse(fechaString, formatter);
-                CalendarDay calendarDay = CalendarDay.from(
-                        localDate.getYear(),
-                        localDate.getMonthValue() - 1,
-                        localDate.getDayOfMonth()
-                );
+                CalendarDay calendarDay = CalendarDay.from(new Date());
 
                 // Obtener el Drawable de la emoción
                 Drawable emotionDrawable = getEmotionDrawable(emotionName);
