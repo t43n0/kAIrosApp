@@ -565,7 +565,7 @@ public class DiarioFragment extends Fragment {
 
         Timestamp now = new Timestamp(new Date());
 
-        String formattedDate = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(now.toDate());
+        String formattedDate = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(now);
 
         entryData.put("userId", currentUserId);
         entryData.put("content", content);
