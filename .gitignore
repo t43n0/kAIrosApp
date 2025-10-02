@@ -14,6 +14,7 @@ kAIros/captures
 kAIros/.externalNativeBuild
 kAIros/.cxx
 kAIros/local.properties
+*.zip
 
 # Archivos y carpetas sensibles en el backend
 backend/.env
