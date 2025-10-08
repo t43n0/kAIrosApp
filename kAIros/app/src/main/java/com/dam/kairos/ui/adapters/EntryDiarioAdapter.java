@@ -14,6 +14,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.dam.kairos.R;
 import com.dam.kairos.data.model.EntryDiario;
+import com.dam.kairos.utils.FirestoreUtils;
 
 import java.util.List;
 
@@ -40,6 +41,16 @@ public class EntryDiarioAdapter extends RecyclerView.Adapter<EntryDiarioAdapter.
 
         holder.textView.setText(entryDiario.getText());
 
+        // Fecha
+        if (entryDiario.getFormattedDate() != null && !entryDiario.getFormattedDate().isEmpty()) {
+            holder.dateTextView.setText(entryDiario.getFormattedDate());
+        } else if (entryDiario.getTimestamp() != null) {
+            holder.dateTextView.setText(FirestoreUtils.format(entryDiario.getTimestamp()));
+        } else {
+            holder.dateTextView.setText("");
+            holder.dateTextView.setVisibility(View.GONE);
+        }
+
         // Mostrar imagen si existe
         if (entryDiario.getImageUrl() == null) {
             Glide.with(context)
@@ -50,10 +61,11 @@ public class EntryDiarioAdapter extends RecyclerView.Adapter<EntryDiarioAdapter.
             holder.imageView.setVisibility(View.GONE);
         } else {
             holder.imageView.setVisibility(View.VISIBLE);
-            String baseUrl = "https://10.0.2.2:3001";
             Glide.with(context)
-                    .load(baseUrl + entryDiario.getImageUrl())
-                    .apply(new RequestOptions().error(R.drawable.entry_feed_error))
+                    .load(entryDiario.getImageUrl())
+                    .apply(new RequestOptions()
+                            .placeholder(R.drawable.placeholder_image)
+                            .error(R.drawable.entry_feed_error))
                     .into(holder.imageView);
         }
     }
@@ -68,11 +80,13 @@ public class EntryDiarioAdapter extends RecyclerView.Adapter<EntryDiarioAdapter.
     }
 
     static class EntryViewHolder extends RecyclerView.ViewHolder {
+        TextView dateTextView;
         TextView textView;
         ImageView imageView;
 
         public EntryViewHolder(@NonNull View itemView) {
             super(itemView);
+            dateTextView = itemView.findViewById(R.id.tvDate);
             textView = itemView.findViewById(R.id.tvContent);
             imageView = itemView.findViewById(R.id.image);
         }
