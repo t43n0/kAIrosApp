@@ -34,21 +34,23 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
-import com.dam.kairos.ui.adapters.EntryDiarioAdapter;
-import com.dam.kairos.utils.ImageStylePrompt;
-import com.dam.kairos.utils.PromptStyles;
 import com.dam.kairos.R;
-import com.dam.kairos.utils.WeeklyAnalyzer;
 import com.dam.kairos.data.model.Entry;
 import com.dam.kairos.data.model.EntryDiario;
 import com.dam.kairos.data.model.Message;
 import com.dam.kairos.data.model.OpenAIRequest;
+import com.dam.kairos.ui.adapters.EntryDiarioAdapter;
+import com.dam.kairos.utils.ImageStylePrompt;
+import com.dam.kairos.utils.PromptStyles;
+import com.dam.kairos.utils.ServerConfig;
+import com.dam.kairos.utils.WeeklyAnalyzer;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -62,12 +64,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -82,8 +82,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
 
 public class DiarioFragment extends Fragment {
 
@@ -473,7 +482,7 @@ public class DiarioFragment extends Fragment {
             JSONObject jsonBody = new JSONObject();
             jsonBody.put("path", path);
 
-            String backendUrl = "https://10.0.2.2:3001/delete-image"; // o tu dominio público si no estás en emulador
+            String backendUrl = ServerConfig.IMAGE_URL;
 
             JsonObjectRequest request = new JsonObjectRequest(
                     Request.Method.POST,
@@ -630,63 +639,111 @@ public class DiarioFragment extends Fragment {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                HttpURLConnection conn = null;
                 try {
-                    URL url = new URL("https://10.0.2.2:3001/generate-image");
-                    conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                    conn.setDoOutput(true);
+                    // Configurar cliente OkHttp
+                    OkHttpClient client = new OkHttpClient.Builder()
+                            .connectTimeout(30, TimeUnit.SECONDS)
+                            .writeTimeout(30, TimeUnit.SECONDS)
+                            .readTimeout(60, TimeUnit.SECONDS)
+                            .build();
 
-                    // Creamos el JSON con docId y prompt
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                    if (user == null) {
+                        Log.e("BACKEND", "Usuario no autenticado");
+                        return;
+                    }
+
+                    String userId = user.getUid();
+
                     JSONObject jsonBody = new JSONObject();
                     jsonBody.put("docId", docId);
                     jsonBody.put("prompt", prompt);
+                    jsonBody.put("userId", userId);
 
-                    // Enviamos cuerpo
-                    BufferedWriter writer = new BufferedWriter(
-                            new OutputStreamWriter(conn.getOutputStream(), StandardCharsets.UTF_8)
+                    RequestBody body = RequestBody.create(
+                            jsonBody.toString(),
+                            MediaType.parse("application/json; charset=utf-8")
                     );
-                    writer.write(jsonBody.toString());
-                    writer.flush();
-                    writer.close();
 
-                    int responseCode = conn.getResponseCode();
-                    if (responseCode == HttpURLConnection.HTTP_OK) {
-                        // Leemos la respuesta
-                        InputStream is = conn.getInputStream();
-                        String resp = streamToString(is);
-                        JSONObject jsonResp = new JSONObject(resp);
-                        final String imageUrl = jsonResp.getString("imageUrl");
+                    String url = ServerConfig.IMAGE_URL;
 
-                        // Actualizamos Firestore con la URL de la imagen
-                        FirebaseFirestore.getInstance()
-                                .collection("entries")
-                                .document(docId)
-                                .update("imageUrl", imageUrl)
-                                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                    @Override
-                                    public void onSuccess(Void aVoid) {
-                                        Log.d(TAG_BACKEND, "URL de imagen actualizada en Firestore");
-                                    }
-                                })
-                                .addOnFailureListener(new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        Log.e(TAG_BACKEND, "Error al actualizar imageUrl", e);
-                                    }
-                                });
+                    okhttp3.Request request = new okhttp3.Request.Builder()
+                            .url(url)
+                            .post(body)
+                            .build();
+
+                    okhttp3.Response response = client.newCall(request).execute();
+
+                    if (response.isSuccessful()) {
+                        String responseBody = response.body().string();
+                        JSONObject jsonResp = new JSONObject(responseBody);
+
+                        if (jsonResp.has("imageUrl")) {
+                            final String imageUrl = jsonResp.getString("imageUrl");
+
+                            if (imageUrl != null && !imageUrl.isEmpty()) {
+                                FirebaseFirestore.getInstance()
+                                        .collection("entries")
+                                        .document(docId)
+                                        .update("imageUrl", imageUrl)
+                                        .addOnSuccessListener(aVoid -> Log.d("BACKEND", "URL actualizada en Firestore"))
+                                        .addOnFailureListener(e -> Log.e("BACKEND", "Error guardando URL", e));
+                            } else {
+                                Log.e("BACKEND", "URL recibida vacía o nula");
+                            }
+                        } else {
+                            Log.e("BACKEND", "No se encontró 'imageUrl' en la respuesta");
+                        }
                     } else {
-                        Log.e(TAG_BACKEND, "Error al generar imagen. Código: " + responseCode);
+                        Log.e("BACKEND", "Error en backend: " + response.code());
+                        Log.e("BACKEND", "Respuesta: " + response.body().string());
                     }
+
                 } catch (Exception e) {
-                    Log.e(TAG_BACKEND, "Excepción al enviar petición: " + e.getMessage(), e);
-                } finally {
-                    if (conn != null) conn.disconnect();
+                    Log.e("BACKEND", "Excepción en generateImageInBackend", e);
                 }
             }
         }).start();
     }
+
+
+    /**
+     * Crea un cliente OkHttp que ignora la validación SSL (solo para entornos locales con certificados autofirmados)
+     */
+    private OkHttpClient getUnsafeOkHttpClient() {
+        try {
+            final TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) { }
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) { }
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[]{};
+                        }
+                    }
+            };
+
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+            builder.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0]);
+            builder.hostnameVerifier((hostname, session) -> true);
+            builder.connectTimeout(5, TimeUnit.SECONDS);
+            builder.readTimeout(10, TimeUnit.SECONDS);
+            builder.writeTimeout(10, TimeUnit.SECONDS);
+
+            return builder.build();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     private void startListeningForImageUpdate(String docId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -744,7 +801,9 @@ public class DiarioFragment extends Fragment {
 
     @NonNull
     private static HttpURLConnection getHttpURLConnection(Entry entrada) throws IOException, JSONException {
-        URL url = new URL("https://10.0.2.2:3001/Entry");
+        // Nueva URL de Firebase Function desplegada
+        URL url = new URL(ServerConfig.IMAGE_URL);
+
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
@@ -760,6 +819,7 @@ public class DiarioFragment extends Fragment {
             byte[] input = json.toString().getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
         }
+
         return conn;
     }
 
