@@ -37,17 +37,13 @@ yarn-error.log*
 
 # === ANDROID STUDIO (kAIros) ===
 kAIros/.gradle/
-kAIros/.idea/caches/
-kAIros/.idea/shelf/
-kAIros/.idea/.gitignore
-kAIros/.idea/workspace.xml
-kAIros/.idea/AndroidProjectSystem.xml
-kAIros/.idea/AppInsightsSettings.xml
-kAIros/.idea/deploymentTargetSelector.xml
-kAIros/.idea/deviceManager.xml
-kAIros/.idea/migrations.xml
-kAIros/.idea/render.experimental.xml
-kAIros/.idea/vcs.xml
+kAIros/.idea/
+!kAIros/.idea/misc.xml
+!kAIros/.idea/gradle.xml
+!kAIros/.idea/compiler.xml
+!kAIros/.idea/modules.xml
+!kAIros/.idea/runConfigurations.xml
+!kAIros/.idea/inspectionProfiles/
 kAIros/build/
 kAIros/captures/
 kAIros/.externalNativeBuild/
