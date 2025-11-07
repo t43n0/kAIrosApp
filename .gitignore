@@ -1,26 +1,87 @@
-#archivos y carpetas del proyecto Android
-kAIros/*.iml
-kAIros/.gradle
-kAIros/local.properties
-kAIros/.idea/caches
-kAIros/.idea/libraries
-kAIros/.idea/modules.xml
-kAIros/.idea/workspace.xml
-kAIros/.idea/navEditor.xml
-kAIros/.idea/assetWizardSettings.xml
-kAIros/.DS_Store
-kAIros/build
-kAIros/captures
-kAIros/.externalNativeBuild
-kAIros/.cxx
-kAIros/local.properties
+# === ARCHIVOS GENERALES ===
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.swn
+*.orig
+*.rej
 *.zip
+*.csv
+Thumbs.db
+.DS_Store
+ehthumbs.db
+Desktop.ini
 
-# Archivos y carpetas sensibles en el backend
+# === NODE GLOBAL ===
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# === ENTORNOS ===
+.env
+.env.local
+.env.*.local
+
+# === VS CODE & IDEA ===
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# === ANDROID STUDIO (kAIros) ===
+kAIros/.gradle/
+kAIros/.idea/caches/
+kAIros/.idea/shelf/
+kAIros/.idea/.gitignore
+kAIros/.idea/workspace.xml
+kAIros/.idea/AndroidProjectSystem.xml
+kAIros/.idea/AppInsightsSettings.xml
+kAIros/.idea/deploymentTargetSelector.xml
+kAIros/.idea/deviceManager.xml
+kAIros/.idea/migrations.xml
+kAIros/.idea/render.experimental.xml
+kAIros/.idea/vcs.xml
+kAIros/build/
+kAIros/captures/
+kAIros/.externalNativeBuild/
+kAIros/.cxx/
+kAIros/local.properties
+kAIros/*.iml
+/build/
+.gradle/
+*.apk
+*.aar
+*.dex
+*.class
+*.keystore
+*.jks
+*.kdbx
+
+# === FIREBASE FUNCTIONS ===
+functions/node_modules/
+functions/.env
+functions/.runtimeconfig.json
+firebase-debug.log
+.firebase/
+
+# === BACKEND NODE.JS ===
 backend/.env
-backend/config/serserviceAccountKey.json
 backend/node_modules/
 backend/cert.pem
 backend/key.pem
-backend/public/generated/
+backend/config/serviceAccountKey.json
 
+# === ARCHIVOS DE BACKUP Y EXPORTACIÓN ===
+export-meta.sh
+
+# === IGNORAR CUALQUIER ZIP O TEMPORAL GENERADO ===
+*.zip
+*.tar
+*.tar.gz
