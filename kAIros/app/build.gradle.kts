@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.dam.kairos"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.dam.kairos"
@@ -50,7 +50,6 @@ dependencies {
     implementation(libs.threetenabp)
     implementation(libs.glide)
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.vertexai)
     testImplementation(libs.junit)
     annotationProcessor(libs.glide.compiler)
     androidTestImplementation(libs.ext.junit)
