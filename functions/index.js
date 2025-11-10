@@ -10,5 +10,6 @@ setGlobalOptions({
 
 export { generateImage } from "./src/generateImage.js";
 export { analyzeWeek } from "./src/analyzeWeek.js";
+export { deleteImage } from "./src/deleteImage.js";
 
-logger.info("[Functions] Endpoints cargados: generateImage, analyzeWeek");
+logger.info("[Functions] Endpoints cargados: generateImage, analyzeWeek, deleteImage");
