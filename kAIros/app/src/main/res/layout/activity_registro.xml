@@ -44,7 +44,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autofillHints=""
-            android:hint="@string/contrase_a"
+            android:hint="@string/contrasena"
             android:inputType="textPassword"
             android:layout_marginTop="12dp" />
 
@@ -53,7 +53,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:autofillHints=""
-        android:hint="@string/confirmar_contrase_a"
+        android:hint="@string/confirmar_contrasena"
         android:inputType="textPassword"
         android:layout_marginTop="12dp" />
 

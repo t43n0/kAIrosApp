@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">kAIros</string>
-    <string name="contrase_a">Contraseña</string>
+    <string name="contrasena">Contraseña</string>
     <string name="volver">Volver</string>
     <string name="iniciar_sesion">Iniciar sesión</string>
     <string name="correo_electronico">Correo electrónico</string>
@@ -11,7 +11,7 @@
     <string name="registrar_cuenta">Registrar cuenta</string>
     <string name="escribe_tu_entrada_diaria_aqui">Escribe tu entrada diaria aquí</string>
     <string name="nombre_de_usuario">Nombre de usuario</string>
-    <string name="confirmar_contrase_a">Confirmar contraseña</string>
+    <string name="confirmar_contrasena">Confirmar contraseña</string>
     <string name="sexo">Sexo:</string>
     <string name="masculino">Masculino</string>
     <string name="femenino">Femenino</string>

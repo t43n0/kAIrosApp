@@ -36,7 +36,7 @@
         android:layout_marginTop="16dp"
         android:layout_marginLeft="48dp"
         android:layout_marginRight="48dp"
-        android:hint="@string/contrase_a"
+        android:hint="@string/contrasena"
         android:autofillHints=""
         android:inputType="textPassword"
         />
