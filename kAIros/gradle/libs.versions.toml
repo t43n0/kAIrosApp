@@ -13,9 +13,8 @@ recyclerview = "1.4.0"
 retrofit = "3.0.0"
 roomCommon = "2.8.3"
 googleGmsGoogleServices = "4.4.4"
-firebaseAuth = "24.0.1"
-firebaseFirestore = "26.0.2"
 volley = "1.2.1"
+firebaseFunctions = "22.1.0"
 
 [libraries]
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
@@ -30,14 +29,15 @@ activity = { group = "androidx.activity", name = "activity", version.ref = "acti
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCommon" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomCommon" }
-material-calendarview = { group = "com.prolificinteractive", name = "material-calendarview", version = "1.4.3" }
-firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+material-calendarview = { group = "com.github.prolificinteractive", name = "material-calendarview", version = "2.0.1" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
 threetenabp = "com.jakewharton.threetenabp:threetenabp:1.4.9"
 glide = "com.github.bumptech.glide:glide:5.0.5"
 volley = { module = "com.android.volley:volley", version.ref = "volley" }
+firebase-functions = { group = "com.google.firebase", name = "firebase-functions", version.ref = "firebaseFunctions" }
 
 
 [plugins]
