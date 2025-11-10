@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -15,17 +16,18 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
 import com.dam.kairos.R;
+import com.github.prolificinteractive.materialcalendarview.CalendarDay;
+import com.github.prolificinteractive.materialcalendarview.DayViewDecorator;
+import com.github.prolificinteractive.materialcalendarview.DayViewFacade;
+import com.github.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.jakewharton.threetenabp.AndroidThreeTen;
-import com.prolificinteractive.materialcalendarview.CalendarDay;
-import com.prolificinteractive.materialcalendarview.DayViewDecorator;
-import com.prolificinteractive.materialcalendarview.DayViewFacade;
-import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
+
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.format.DateTimeFormatter;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +36,7 @@ public class CalendarioFragment extends Fragment {
     private static final String TAG = "CalendarioFragment";
 
     private MaterialCalendarView calendarView;
-    private FirebaseAuth firebaseAuth;
+
     private String currentUserId;
 
     @Override
@@ -43,8 +45,16 @@ public class CalendarioFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_calendario, container, false);
-        firebaseAuth = FirebaseAuth.getInstance();
-        currentUserId = firebaseAuth.getCurrentUser().getUid();
+        FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+
+        if (currentUser != null) {
+            currentUserId = currentUser.getUid();
+        } else {
+            Log.e(TAG, "User is not authenticated.");
+            // Handle user not being logged in. For example, navigate to login screen.
+            return view;
+        }
 
         AndroidThreeTen.init(requireContext());
 
@@ -61,6 +71,11 @@ public class CalendarioFragment extends Fragment {
     }
 
     private void loadEmotionsFromFirestore() {
+
+        if (currentUserId == null) {
+            return; // Don't proceed if user is not logged in
+        }
+
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         db.collection("analyses").document(currentUserId)
@@ -100,7 +115,11 @@ public class CalendarioFragment extends Fragment {
             try {
                 // 🔁 Usamos ThreeTenBP en lugar de java.time
                 LocalDate localDate = LocalDate.parse(fechaString, formatter);
-                CalendarDay calendarDay = CalendarDay.from(new Date());
+                CalendarDay calendarDay = CalendarDay.from(
+                        localDate.getYear(),
+                        localDate.getMonthValue(),
+                        localDate.getDayOfMonth()
+                );
 
                 // Obtener el Drawable de la emoción
                 Drawable emotionDrawable = getEmotionDrawable(emotionName);
@@ -117,21 +136,22 @@ public class CalendarioFragment extends Fragment {
 
 
     private Drawable getEmotionDrawable(String emotionName) {
-        if (isAdded()) {
-            int resourceId = requireContext().getResources().getIdentifier(
-                    emotionName, "drawable", requireContext().getPackageName()
-            );
-
-            if (resourceId == 0) {
-                Log.e(TAG, "❌ No se encontró recurso para: " + emotionName);
-                return ContextCompat.getDrawable(requireContext(), R.drawable.ic_launcher_background); // 🔥 PRUEBA CON UN DRAWABLE SEGURO
-            }
-
-            Log.d(TAG, "✅ Recurso encontrado: " + emotionName + " -> ID: " + resourceId);
-            return ContextCompat.getDrawable(requireContext(), resourceId);
+        if (getContext() == null) {
+            Log.e(TAG, "Fragment not attached to a context.");
+            return null;
         }
-        Log.e(TAG, "⚠️ El Fragment no está asociado a una Activity.");
-        return null;
+        int resourceId = getResources().getIdentifier(
+                emotionName, "drawable", getContext().getPackageName()
+        );
+
+
+        if (resourceId == 0) {
+            Log.w(TAG, "Resource not found for drawable: " + emotionName);
+            // Returning a default/fallback drawable might be a good idea
+            return null;
+        }
+        return ContextCompat.getDrawable(getContext(), resourceId);
+
     }
 
     private Map<String, String> extractEmotionsFromAnalysis(String analysis) {
@@ -169,7 +189,7 @@ public class CalendarioFragment extends Fragment {
         @Override
         public void decorate(DayViewFacade view) {
             Log.d(TAG, "✅ Aplicando decoración en: " + date);
-            view.setSelectionDrawable(drawable);
+            view.setBackgroundDrawable(drawable);
         }
     }
 }

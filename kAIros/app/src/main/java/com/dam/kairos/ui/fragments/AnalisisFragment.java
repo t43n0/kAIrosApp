@@ -63,7 +63,7 @@ public class AnalisisFragment extends Fragment {
                             if (analysis != null && !analysis.isEmpty()) {
                                 analysis = procesarTexto(analysis);
                                 SpannableStringBuilder formattedText = (SpannableStringBuilder) Html.fromHtml(analysis, Html.FROM_HTML_MODE_LEGACY);
-                                showTextWithFormatting(formattedText); // ya no devuelve nada
+                                showTextWithFormatting(formattedText); // Ajusta la alineación directamente sobre el SpannableStringBuilder
                                 tvAnalisis.setText(formattedText);
                             } else {
                                 Log.d("TAG", "El análisis está vacío.");

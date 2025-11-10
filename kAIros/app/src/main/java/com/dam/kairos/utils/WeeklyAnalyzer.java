@@ -1,19 +1,16 @@
 package com.dam.kairos.utils;
 
+import androidx.annotation.NonNull;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.functions.FirebaseFunctions;
+import com.google.firebase.functions.HttpsCallableResult;
 
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.stream.Collectors;
-
-import javax.net.ssl.HttpsURLConnection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WeeklyAnalyzer {
 
@@ -21,46 +18,52 @@ public class WeeklyAnalyzer {
         void onSuccess(String analysisText);
         void onError(String errorMessage);
     }
+    
+    public static void analyzeUserWeek(final String prePrompt,
+                                       final String modelPro,
+                                       final AnalysisCallback callback) {
 
-    public static void analyzeUserWeek(String prePrompt, String modelPro, AnalysisCallback callback) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-
+        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
             callback.onError("Usuario no autenticado.");
             return;
         }
 
-        String userId = user.getUid();
+        FirebaseFunctions functions = FirebaseFunctions.getInstance("us-central1");
 
-        try {
-            JSONObject json = new JSONObject();
-            json.put("userId", userId);
-            json.put("prePrompt", prePrompt);
-            json.put("model", modelPro);
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("userId", user.getUid());
+        data.put("prePrompt", prePrompt);
+        data.put("model", modelPro);
 
-            URL url = new URL(ServerConfig.ANALYSIS_URL);
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setDoOutput(true);
+        functions
+                .getHttpsCallable("analyzeUserWeek") // <-- nombre de tu Function onCall
+                .call(data)
+                .addOnSuccessListener(new OnSuccessListener<HttpsCallableResult>() {
+                    @Override
+                    public void onSuccess(HttpsCallableResult httpsCallableResult) {
+                        Object raw = httpsCallableResult.getData();
+                        String analysis = null;
 
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = json.toString().getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
-            }
+                        if (raw instanceof Map) {
+                            Object a = ((Map<?, ?>) raw).get("analysis");
+                            if (a instanceof String) analysis = (String) a;
+                        } else if (raw instanceof String) {
+                            analysis = (String) raw;
+                        }
 
-            int responseCode = conn.getResponseCode();
-            if (responseCode == 200) {
-                InputStream is = conn.getInputStream();
-                String result = new BufferedReader(new InputStreamReader(is))
-                        .lines().collect(Collectors.joining("\n"));
-                callback.onSuccess(result);
-            } else {
-                callback.onError("Error en la función: " + responseCode);
-            }
-
-        } catch (Exception e) {
-            callback.onError("Error de conexión: " + e.getMessage());
-        }
+                        if (analysis != null && !analysis.isEmpty()) {
+                            callback.onSuccess(analysis);
+                        } else {
+                            callback.onError("Respuesta sin análisis disponible.");
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        callback.onError("Error en la función: " + e.getMessage());
+                    }
+                });
     }
 }

@@ -83,8 +83,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -152,7 +154,7 @@ public class DiarioFragment extends Fragment {
 
         swtImage.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            public void onCheckedChanged(@NonNull CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     spnStyle.setVisibility(VISIBLE);
                 } else {
@@ -327,7 +329,10 @@ public class DiarioFragment extends Fragment {
                                                         requireActivity().runOnUiThread(new Runnable() {
                                                             @Override
                                                             public void run() {
-                                                                deleteImageFromBackend((String) document.get("imageUrl"));
+                                                                String imageUrl = (String) document.get("imageUrl");
+                                                                if (imageUrl != null && !imageUrl.isEmpty()) {
+                                                                    deleteImageFromBackend(entryId);
+                                                                }
                                                                 loadEntries(); // Recargar entradas
                                                                 Toast.makeText(getContext(), "Entradas de la última semana eliminadas", Toast.LENGTH_SHORT).show();
                                                             }
@@ -383,7 +388,10 @@ public class DiarioFragment extends Fragment {
                                                         requireActivity().runOnUiThread(new Runnable() {
                                                             @Override
                                                             public void run() {
-                                                                deleteImageFromBackend((String) document.get("imageUrl"));
+                                                                String imageUrl = (String) document.get("imageUrl");
+                                                                if (imageUrl != null && !imageUrl.isEmpty()) {
+                                                                    deleteImageFromBackend(entryId);
+                                                                }
                                                                 loadEntries(); // Recargar entradas
                                                                 Toast.makeText(getContext(), "Todas las entradas eliminadas", Toast.LENGTH_SHORT).show();
                                                             }
@@ -439,8 +447,10 @@ public class DiarioFragment extends Fragment {
                                                         @Override
                                                         public void run() {
                                                             loadEntries();
-                                                            deleteImageFromBackend((String) lastEntryDocument.get("imageUrl"));
-                                                            Toast.makeText(getContext(), "Última entrada eliminada", Toast.LENGTH_SHORT).show();
+                                                            String imageUrl = (String) lastEntryDocument.get("imageUrl");
+                                                            if (imageUrl != null && !imageUrl.isEmpty()) {
+                                                                deleteImageFromBackend(lastEntryId);
+                                                            }                                                            Toast.makeText(getContext(), "Última entrada eliminada", Toast.LENGTH_SHORT).show();
                                                         }
                                                     });
                                                 }
@@ -470,22 +480,20 @@ public class DiarioFragment extends Fragment {
         });
     }
 
-    private void deleteImageFromBackend(String imageUrl) {
+    private void deleteImageFromBackend(String entryId) {
+        if (entryId == null || entryId.isEmpty()) {
+            return;
+        }
+
         try {
-            Uri uri = Uri.parse(imageUrl);
-            String path = uri.getPath();
-            if (path != null && path.startsWith("/")) {
-                path = path.substring(1); // quitar el primer "/"
-            }
-
             JSONObject jsonBody = new JSONObject();
-            jsonBody.put("path", path);
 
-            String backendUrl = ServerConfig.IMAGE_URL;
+            jsonBody.put("docId", entryId);
+            jsonBody.put("userId", currentUserId);
 
             JsonObjectRequest request = new JsonObjectRequest(
                     Request.Method.POST,
-                    backendUrl,
+                    ServerConfig.DELETE_IMAGE_URL,
                     jsonBody,
                     new Response.Listener<JSONObject>() {
                         @Override
@@ -505,7 +513,7 @@ public class DiarioFragment extends Fragment {
             queue.add(request);
 
         } catch (JSONException e) {
-            e.printStackTrace();
+            Log.e("DeleteImage", "Error creando el cuerpo de la petición", e);
         }
     }
 
@@ -674,19 +682,30 @@ public class DiarioFragment extends Fragment {
                     okhttp3.Response response = client.newCall(request).execute();
 
                     if (response.isSuccessful()) {
+                        assert response.body() != null;
                         String responseBody = response.body().string();
                         JSONObject jsonResp = new JSONObject(responseBody);
 
                         if (jsonResp.has("imageUrl")) {
                             final String imageUrl = jsonResp.getString("imageUrl");
 
-                            if (imageUrl != null && !imageUrl.isEmpty()) {
+                            if (!imageUrl.isEmpty()) {
                                 FirebaseFirestore.getInstance()
                                         .collection("entries")
                                         .document(docId)
                                         .update("imageUrl", imageUrl)
-                                        .addOnSuccessListener(aVoid -> Log.d("BACKEND", "URL actualizada en Firestore"))
-                                        .addOnFailureListener(e -> Log.e("BACKEND", "Error guardando URL", e));
+                                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                            @Override
+                                            public void onSuccess(Void aVoid) {
+                                                Log.d("BACKEND", "URL actualizada en Firestore");
+                                            }
+                                        })
+                                        .addOnFailureListener(new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+                                                Log.e("BACKEND", "Error guardando URL", e);
+                                            }
+                                        });
                             } else {
                                 Log.e("BACKEND", "URL recibida vacía o nula");
                             }
@@ -695,6 +714,7 @@ public class DiarioFragment extends Fragment {
                         }
                     } else {
                         Log.e("BACKEND", "Error en backend: " + response.code());
+                        assert response.body() != null;
                         Log.e("BACKEND", "Respuesta: " + response.body().string());
                     }
 
@@ -732,7 +752,12 @@ public class DiarioFragment extends Fragment {
 
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
             builder.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0]);
-            builder.hostnameVerifier((hostname, session) -> true);
+            builder.hostnameVerifier(new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            });
             builder.connectTimeout(5, TimeUnit.SECONDS);
             builder.readTimeout(10, TimeUnit.SECONDS);
             builder.writeTimeout(10, TimeUnit.SECONDS);
