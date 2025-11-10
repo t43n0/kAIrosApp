@@ -35,7 +35,6 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.dam.kairos.R;
-import com.dam.kairos.data.model.Entry;
 import com.dam.kairos.data.model.EntryDiario;
 import com.dam.kairos.data.model.Message;
 import com.dam.kairos.data.model.OpenAIRequest;
@@ -800,7 +799,7 @@ public class DiarioFragment extends Fragment {
 
 
     @NonNull
-    private static HttpURLConnection getHttpURLConnection(Entry entrada) throws IOException, JSONException {
+    private static HttpURLConnection getHttpURLConnection(EntryDiario entrada) throws IOException, JSONException {
         // Nueva URL de Firebase Function desplegada
         URL url = new URL(ServerConfig.IMAGE_URL);
 
@@ -813,7 +812,7 @@ public class DiarioFragment extends Fragment {
         json.put("texto", entrada.getText());
         json.put("esPublica", true);
         json.put("generarImagen", true);
-        json.put("usuarioId", entrada.getUserId()); // opcional
+        json.put("usuarioId", entrada.getIdUser()); // opcional
 
         try (OutputStream os = conn.getOutputStream()) {
             byte[] input = json.toString().getBytes(StandardCharsets.UTF_8);

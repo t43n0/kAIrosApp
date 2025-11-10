@@ -9,7 +9,7 @@ public class UserProfile {
     private String birthdate;
     private boolean remindersEnabled;
 
-    public UserProfile() {} // Fi
+    public UserProfile() {}
 
     public UserProfile(String userId, String username, String email, String sex, String birthdate, boolean remindersEnabled) {
         this.userId = userId;

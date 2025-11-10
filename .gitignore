@@ -37,7 +37,7 @@ yarn-error.log*
 
 # === ANDROID STUDIO (kAIros) ===
 kAIros/.gradle/
-kAIros/.idea/
+kAIros/.idea/*
 !kAIros/.idea/misc.xml
 !kAIros/.idea/gradle.xml
 !kAIros/.idea/compiler.xml
@@ -49,6 +49,7 @@ kAIros/captures/
 kAIros/.externalNativeBuild/
 kAIros/.cxx/
 kAIros/local.properties
+kAIros/app/google-services.json
 kAIros/*.iml
 /build/
 .gradle/

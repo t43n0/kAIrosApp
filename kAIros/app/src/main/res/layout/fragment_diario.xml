@@ -21,7 +21,7 @@
                 android:gravity="top"
                 android:hint="@string/escribe_tu_entrada_diaria_aqui"
                 android:inputType="textMultiLine"
-                android:maxLength="500"
+                android:maxLength="2000"
                 android:minHeight="200dp" />
 
             <ImageView
