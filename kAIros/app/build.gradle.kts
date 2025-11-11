@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.dam.kairos"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -29,6 +29,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
     }
 }
 
@@ -48,6 +49,7 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.material.calendarview)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.threetenabp)
     implementation(libs.glide)
     testImplementation(libs.junit)

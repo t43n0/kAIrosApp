@@ -16,14 +16,14 @@
             android:id="@+id/calendarView"
             android:layout_width="match_parent"
             android:layout_height="600dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:mcv_showOtherDates="all"
             app:mcv_tileSize="match_parent"
             app:mcv_selectionColor="@color/black"
-            app:mcv_arrowColor="@color/black"
-            app:mcv_weekDayTextAppearance="@android:style/TextAppearance.Medium"
-            app:mcv_dateTextAppearance="@android:style/TextAppearance.Medium"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:mcv_weekDayTextAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:mcv_dateTextAppearance="@style/TextAppearance.AppCompat.Medium" />
+
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
