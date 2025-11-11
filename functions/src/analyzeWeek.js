@@ -120,8 +120,6 @@ function handleAnalyzeWeek(req, res) {
 }
 
 export const analyzeWeek = onRequest(
-  { secrets: [OPENAI_API_KEY] },
-  function (req, res) {
-    handleAnalyzeWeek(req, res);
-  }
+  { region: "europe-west1", secrets: [OPENAI_API_KEY] },
+  function (req, res) { handleAnalyzeWeek(req, res); }
 );

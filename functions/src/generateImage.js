@@ -122,10 +122,7 @@ function handleGenerateImage(req, res) {
   processRequest(req, res);
 }
 
-// 8️⃣ Exportamos la función HTTPS (sin lambdas)
 export const generateImage = onRequest(
-  { secrets: [OPENAI_API_KEY] },
-  function (req, res) {
-    handleGenerateImage(req, res);
-  }
+  { region: "europe-west1", secrets: [OPENAI_API_KEY] },
+  function (req, res) { handleGenerateImage(req, res); }
 );
