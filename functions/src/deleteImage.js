@@ -1,93 +1,88 @@
-import { onRequest } from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
-import admin from "firebase-admin";
+var admin = require("firebase-admin");
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const db = admin.firestore();
-const bucket = admin.storage().bucket();
+var db = admin.firestore();
+var bucket = admin.storage().bucket();
 
 /**
- * Procesa la eliminación de la imagen y limpieza del campo en Firestore.
- * @param {Object} req
- * @param {Object} res
+ * Handler principal para borrar una imagen y limpiar Firestore
  */
-async function processDeleteImage(req, res) {
+
+async function handler(req, res) {
   try {
     if (req.method !== "POST") {
-      res.status(405).json({ error: "Método no permitido" });
+      res.status(405).send("Method Not Allowed");
       return;
     }
 
-    var body = req.body || {};
-    var docId = body.docId;
-    var userId = body.userId;
+    var entryId = req.body.entryId;
 
-    if (!docId || !userId) {
-      res.status(400).json({ error: "Faltan docId o userId" });
+    if (!entryId) {
+      res.status(400).json({ error: "entryId is required" });
       return;
     }
 
-    var filePath = "entries/" + userId + "/" + docId + ".png";
-    var file = bucket.file(filePath);
-
-    var existsArr = await file.exists();
-    var exists = existsArr && existsArr[0] === true;
-
-    if (exists) {
-      await file.delete();
-      logger.log("[deleteImage] Imagen eliminada: " + filePath);
-    } else {
-      logger.warn("[deleteImage] Imagen no encontrada: " + filePath);
-    }
-
-    var docRef = db.collection("entries").doc(docId);
-    var docSnap = await docRef.get();
-
-    if (docSnap && docSnap.exists) {
-      await docRef.update({
-        imageUrl: admin.firestore.FieldValue.delete()
-      });
-    } else {
-      logger.log("[deleteImage] Documento " + docId + " ya no existe, se omite la actualización");
-    }
-
-    res.status(200).json({ success: true });
+    await processDelete(entryId, res);
   } catch (error) {
-    logger.error("[deleteImage] Error interno: " + (error && error.message ? error.message : String(error)));
-    res.status(500).json({
-      success: false,
-      error: (error && error.message) ? error.message : "Error eliminando imagen"
-    });
+    console.error("Error en deleteImage.handler:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Delete image failed" });
+    }
   }
 }
 
 /**
- * Controlador principal HTTP (sin lambdas)
- * @param {Object} req
- * @param {Object} res
+ * Lógica de borrado: lee el doc, elimina imagen de Storage y limpia imageUrl
  */
-function handleDeleteImage(req, res) {
-  logger.log("[deleteImage] Solicitud recibida");
 
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
+async function processDelete(entryId, res) {
+  var docRef = db.collection("entries").doc(entryId);
+  var snapshot = await docRef.get();
 
-  if (req.method === "OPTIONS") {
+  if (!snapshot.exists) {
+    res.status(404).json({ error: "Entry not found" });
+    return;
+  }
+
+  var data = snapshot.data();
+  var imageUrl = data.imageUrl;
+
+  if (!imageUrl) {
     res.status(204).send("");
     return;
-    }
+  }
 
-  processDeleteImage(req, res);
+  var filePath = extraerPathDeUrl(imageUrl);
+
+  if (!filePath) {
+    res
+      .status(500)
+      .json({ error: "No se pudo extraer el path de la URL de la imagen." });
+    return;
+  }
+
+  var file = bucket.file(filePath);
+
+  await file.delete();
+  await docRef.update({
+    imageUrl: admin.firestore.FieldValue.delete()
+  });
+
+  res.status(204).send("");
 }
 
-// Export de la función (tradicional) — añade region si quieres forzar europe-west1
-export const deleteImage = onRequest(
-  { region: "europe-west1" },
-  function (req, res) {
-    handleDeleteImage(req, res);
-  }
-);
+/**
+ * Ejemplo de extracción de path desde una URL de Storage
+ * ADÁPTALO a tu formato real.
+ */
+
+function extraerPathDeUrl(url) {
+  return url;
+}
+
+module.exports = {
+  handler: handler
+};

@@ -1,125 +1,128 @@
-import { onRequest } from "firebase-functions/v2/https";
-import { defineSecret } from "firebase-functions/params";
-import * as logger from "firebase-functions/logger";
-import admin from "firebase-admin";
-import OpenAI from "openai";
-
-const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
+var admin = require("firebase-admin");
+var OpenAI = require("openai");
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const db = admin.firestore();
+var db = admin.firestore();
 
 /**
- * Procesa la solicitud de análisis semanal de entradas.
- * @param {Object} req - Petición HTTP
- * @param {Object} res - Respuesta HTTP
+ * Handler HTTP para analizar la semana de un usuario.
+ * Espera body: { userId, prompt, model }
+ * Recibe la apiKey desde index.js (v2 + secrets) como tercer parámetro.
  */
-async function processAnalyzeWeek(req, res) {
-  try {
-    if (req.method !== "POST") {
-      res.status(405).json({ error: "Método no permitido. Usa POST." });
-      return;
-    }
 
-    const userId = req.body.userId;
-    const prePrompt = req.body.prePrompt;
-    const model = req.body.model;
-
-    if (!userId) {
-      res.status(400).json({ error: "Falta el userId en la solicitud." });
-      return;
-    }
-
-    // Calcular fechas de inicio y fin de la semana actual
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    monday.setHours(0, 0, 0, 0);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    // Obtener entradas del usuario de Firestore
-    const entriesSnap = await db.collection("entries")
-      .where("userId", "==", userId)
-      .where("timestamp", ">=", monday)
-      .where("timestamp", "<=", sunday)
-      .get();
-
-    if (entriesSnap.empty) {
-      res.status(404).json({ error: "No se encontraron entradas para esta semana." });
-      return;
-    }
-
-    const entries = [];
-    entriesSnap.forEach(function (doc) {
-      const data = doc.data();
-      const text = data.content || data.text || "";
-      if (text && text.trim() !== "") {
-        entries.push(text);
-      }
-    });
-
-    if (entries.length === 0) {
-      res.status(400).json({ error: "No hay texto válido para analizar." });
-      return;
-    }
-
-    const prompt = entries.map(function (t, i) { return (i + 1) + ". " + t; }).join("\n");
-
-    const openai = new OpenAI({
-      apiKey: OPENAI_API_KEY.value()
-    });
-
-    const completion = await openai.chat.completions.create({
-      model: model || "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "Eres un asistente especializado en psicología emocional y bienestar." },
-        { role: "user", content: prompt }
-      ],
-      max_tokens: 1000,
-      temperature: 0.7
-    });
-
-    const analysisText =
-      (completion.choices &&
-        completion.choices[0] &&
-        completion.choices[0].message &&
-        completion.choices[0].message.content) ||
-      "No se pudo generar el análisis.";
-
-    res.status(200).json({ analysis: analysisText });
-  } catch (error) {
-    logger.error("[analyzeWeek] ❌ Error interno: " + error.message);
-    res.status(500).json({ error: error.message });
-  }
-}
-
-
-
-/**
- * Maneja la solicitud HTTP para el análisis semanal.
- * @param {Object} req - Petición HTTP
- * @param {Object} res - Respuesta HTTP
- */
-function handleAnalyzeWeek(req, res) {
-  logger.log("[analyzeWeek] 📥 Solicitud recibida");
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
+async function handler(req, res, apiKey) {
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
     return;
   }
 
-  processAnalyzeWeek(req, res);
+  if (!apiKey) {
+    console.error("[analyzeWeek] Falta configuración de OpenAI en el servidor.");
+    res
+      .status(500)
+      .json({ error: "Falta configuración de OpenAI en el servidor." });
+    return;
+  }
+
+  var openai = new OpenAI({ apiKey: apiKey });
+
+  var userId = req.body.userId;
+  var prompt = req.body.prompt;
+  var model = req.body.model || "gpt-4o";
+
+  if (!userId || !prompt) {
+    res.status(400).json({
+      error: "userId y prompt son obligatorios."
+    });
+    return;
+  }
+
+  console.log("[analyzeWeek] Petición recibida", {
+    userId: userId,
+    model: model,
+    hasPrompt: !!prompt
+  });
+
+  try {
+    var entriesText = await obtenerEntradasSemana(userId);
+    console.log(
+      "[analyzeWeek] Entradas obtenidas, longitud del texto:",
+      entriesText ? entriesText.length : 0
+    );
+
+    var analysisText = await llamarOpenAI(openai, entriesText, prompt, model);
+    console.log("[analyzeWeek] Análisis generado correctamente.");
+
+    res.json({ analysis: analysisText });
+  } catch (error) {
+    console.error("Error en analyzeWeek:", error);
+    res.status(500).json({ error: "Analysis failed" });
+  }
 }
 
-export const analyzeWeek = onRequest(
-  { region: "europe-west1", secrets: [OPENAI_API_KEY] },
-  function (req, res) { handleAnalyzeWeek(req, res); }
-);
+/**
+ * Leer entradas de Firestore y formatearlas
+ * Ajusta la colección/campos a tu modelo real.
+ */
+
+async function obtenerEntradasSemana(userId) {
+  var querySnapshot = await db
+    .collection("entries")
+    .where("userId", "==", userId)
+    .orderBy("timestamp", "asc")
+    .get();
+
+  var lines = [];
+
+  querySnapshot.forEach(function (doc) {
+    var data = doc.data();
+    var fecha = data.formattedDate || "";
+    var contenido = data.content || "";
+    lines.push(fecha + ": " + contenido);
+  });
+
+  return lines.join("\n");
+}
+
+/**
+ * Llamar a OpenAI con el texto de entradas + prompt largo
+ */
+
+async function llamarOpenAI(openai, entriesText, longPrompt, model) {
+  var finalPrompt =
+    longPrompt + "\n\nEntradas de la semana:\n" + (entriesText || "");
+
+  var response = await openai.chat.completions.create({
+    model: model,
+    messages: [
+      {
+        role: "system",
+        content: "Eres un asistente que analiza diarios emocionales."
+      },
+      {
+        role: "user",
+        content: finalPrompt
+      }
+    ],
+    temperature: 0.7
+  });
+
+  if (
+    response &&
+    response.choices &&
+    response.choices.length > 0 &&
+    response.choices[0].message &&
+    response.choices[0].message.content
+  ) {
+    return response.choices[0].message.content;
+  }
+
+  throw new Error("Respuesta inválida de OpenAI");
+}
+
+module.exports = {
+  handler: handler
+};

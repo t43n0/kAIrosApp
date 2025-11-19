@@ -1,128 +1,134 @@
-import { onRequest } from "firebase-functions/v2/https";
-import { defineSecret } from "firebase-functions/params";
-import * as logger from "firebase-functions/logger";
-import admin from "firebase-admin";
-import OpenAI from "openai";
+// functions/src/generateImage.js
+var admin = require("firebase-admin");
+var OpenAI = require("openai");
 
-// 1️⃣ Definimos el secreto seguro almacenado en Firebase
-const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
-
-// 2️⃣ Inicializamos Firebase Admin solo una vez
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const db = admin.firestore();
-const bucket = admin.storage().bucket();
+var db = admin.firestore();
+var bucket = admin.storage().bucket();
 
 /**
- * Procesa la solicitud de generación de imagen.
- * @param {Object} req - Petición HTTP
- * @param {Object} res - Respuesta HTTP
+ * Handler HTTP para generar una imagen a partir de un prompt.
+ * Flujo:
+ *  - Recibe { userId, docId, prompt }
+ *  - Llama a OpenAI (DALL·E) para generar la imagen en base64
+ *  - Sube la imagen a Firebase Storage en /diary_images/{userId}/{docId}.png
+ *  - Obtiene una URL de lectura
+ *  - Actualiza entries/{docId}.imageUrl en Firestore
+ *  - Devuelve { imageUrl, storagePath }
  */
-async function processRequest(req, res) {
+
+async function handler(req, res) {
   try {
-    const prompt = req.body.prompt;
-    const docId = req.body.docId;
-    const userId = req.body.userId;
-
-    if (!prompt || !docId || !userId) {
-      res.status(400).send({ error: "Faltan parámetros requeridos" });
+    if (req.method !== "POST") {
+      res.status(405).send({ error: "Method not allowed" });
       return;
     }
 
-    // 3️⃣ Inicializamos OpenAI con la clave segura
-    const openai = new OpenAI({
-      apiKey: OPENAI_API_KEY.value()
-    });
+    var apiKey = process.env.OPENAI_API_KEY;
 
-    let result = null;
-
-    // 4️⃣ Intento con modelo principal
-    try {
-      result = await openai.images.generate({
-        model: "gpt-image-1",
-        prompt: prompt,
-        size: "1024x1024",
-        response_format: "b64_json"
+    if (!apiKey) {
+      console.error("[generateImage] OPENAI_API_KEY no está definida en el entorno.");
+      res.status(500).json({
+        error: "Falta configuración de OpenAI en el servidor.",
       });
-    } catch (e) {
-      logger.warn("[generateImage] Fallback a dall-e-3: " + e.message);
-      result = await openai.images.generate({
-        model: "dall-e-3",
-        prompt: prompt,
-        size: "1024x1024",
-        response_format: "b64_json"
-      });
-    }
-
-    if (!result || !result.data || !result.data[0] || !result.data[0].b64_json) {
-      res.status(500).send({ error: "Respuesta inválida de OpenAI" });
       return;
     }
 
-    // 5️⃣ Guardamos la imagen en Firebase Storage
-    const imageBase64 = result.data[0].b64_json;
-    const imageBuffer = Buffer.from(imageBase64, "base64");
-    const filename = "entries/" + userId + "/" + docId + ".png";
-    const file = bucket.file(filename);
+    var body = req.body || {};
+    var userId = body.userId;
+    var docId = body.docId;
+    var prompt = body.prompt;
 
-    await file.save(imageBuffer, {
-      metadata: { contentType: "image/png" },
-      resumable: false
+    if (!userId || !docId || !prompt) {
+      res.status(400).json({
+        error: "userId, docId y prompt son obligatorios.",
+      });
+      return;
+    }
+
+    console.log("[generateImage] Petición recibida", {
+      userId: userId,
+      docId: docId,
+      promptLength: prompt ? prompt.length : 0,
     });
 
-    // 6️⃣ Generamos una URL firmada de acceso
-    const urls = await file.getSignedUrl({
+    var client = new OpenAI({ apiKey: apiKey });
+
+    var imageResponse = await client.images.generate({
+      model: "gpt-image-1",
+      prompt: prompt,
+      n: 1,
+      size: "1024x1024",
+      response_format: "b64_json",
+    });
+
+    if (
+      !imageResponse ||
+      !imageResponse.data ||
+      !imageResponse.data[0] ||
+      !imageResponse.data[0].b64_json
+    ) {
+      console.error(
+        "[generateImage] Respuesta inesperada de OpenAI:",
+        imageResponse
+      );
+      res.status(500).json({ error: "No se pudo generar la imagen." });
+      return;
+    }
+
+    var b64Data = imageResponse.data[0].b64_json;
+    var buffer = Buffer.from(b64Data, "base64");
+
+    var filePath = "diary_images/" + userId + "/" + docId + ".png";
+    var file = bucket.file(filePath);
+
+    await file.save(buffer, {
+      contentType: "image/png",
+      resumable: false,
+    });
+
+    console.log("[generateImage] Imagen subida a Storage en", filePath);
+
+    var signedUrls = await file.getSignedUrl({
       action: "read",
-      expires: Date.now() + 365 * 24 * 60 * 60 * 1000 // 1 año
+      expires: "2100-01-01",
     });
 
-    const url = urls[0];
+    var imageUrl = signedUrls && signedUrls[0] ? signedUrls[0] : null;
 
-    // 7️⃣ Guardamos la URL en Firestore
+    if (!imageUrl) {
+      console.error("[generateImage] No se pudo obtener signed URL.");
+      res.status(500).json({
+        error: "No se pudo obtener la URL de descarga de la imagen.",
+      });
+      return;
+    }
+
+    console.log("[generateImage] Signed URL generada:", imageUrl);
+
     await db.collection("entries").doc(docId).update({
-      imageUrl: url,
-      generatedAt: admin.firestore.FieldValue.serverTimestamp()
+      imageUrl: imageUrl,
     });
 
-    res.status(200).json({ success: true, imageUrl: url });
-  } catch (error) {
-    logger.error("[generateImage] ❌ Error interno: " + error.message);
-    res.status(500).send({
-      success: false,
-      error: error.message || "Error interno en generateImage"
+    console.log("[generateImage] Firestore actualizado para docId", docId);
+
+    res.status(200).json({
+      imageUrl: imageUrl,
+      storagePath: filePath,
     });
+  } catch (e) {
+    if (e.response && e.response.data) {
+      console.error("[generateImage] Error de OpenAI:", e.response.data);
+    } else {
+      console.error("Error en generateImage.handler:", e);
+    }
+    res.status(500).json({ error: "Error interno al generar la imagen." });
   }
 }
 
-/**
- * Controlador principal de la función HTTPS
- * @param {Object} req
- * @param {Object} res
- */
-function handleGenerateImage(req, res) {
-  logger.log("[generateImage] 📥 Solicitud recibida");
-
-  // Permitir CORS
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "POST") {
-    res.status(405).send({ error: "Método no permitido" });
-    return;
-  }
-
-  processRequest(req, res);
-}
-
-export const generateImage = onRequest(
-  { region: "europe-west1", secrets: [OPENAI_API_KEY] },
-  function (req, res) { handleGenerateImage(req, res); }
-);
+module.exports = {
+  handler: handler,
+};
